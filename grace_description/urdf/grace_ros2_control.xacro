@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="grace">
+
+    <ros2_control name="RobotSystem" type="system">
+
+        <!-- ros2_control Gazebo -->
+        <xacro:if value="$(arg is_sim)">
+            <!-- ROS 2 Humble -->
+            <xacro:if value="$(arg is_ignition)">
+                <hardware>
+                    <plugin>ign_ros2_control/IgnitionSystem</plugin>
+                </hardware>
+            </xacro:if>
+
+            <!-- ROS 2 Iron or above -->
+            <xacro:unless value="$(arg is_ignition)">
+                <hardware>
+                    <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+                </hardware>
+            </xacro:unless>
+        </xacro:if>
+
+        <!-- ros2_control Real Robot -->
+        <xacro:unless value="$(arg is_sim)">
+            <xacro:arg name="port" default="/dev/grace_esp32" />
+            <xacro:arg name="command_source" default="ros2_control" />
+            <hardware>
+                <plugin>grace_firmware/GraceInterface</plugin>
+                <param name="port">$(arg port)</param>
+                <param name="command_source">$(arg command_source)</param>
+            </hardware>
+        </xacro:unless>
+        
+        <!-- ros2_control Common Interfaces (torque control + velocity for diff_drive compat) -->
+        <joint name="wheel_right_joint">
+            <command_interface name="effort">
+              <param name="min">-10.0</param>
+              <param name="max">10.0</param>
+            </command_interface>
+            <command_interface name="velocity">
+              <param name="min">-18.85</param>
+              <param name="max">18.85</param>
+            </command_interface>
+            <state_interface name="position" />
+            <state_interface name="velocity" />
+        </joint>
+
+        <joint name="wheel_left_joint">
+            <command_interface name="effort">
+              <param name="min">-10.0</param>
+              <param name="max">10.0</param>
+            </command_interface>
+            <command_interface name="velocity">
+              <param name="min">-18.85</param>
+              <param name="max">18.85</param>
+            </command_interface>
+            <state_interface name="position" />
+            <state_interface name="velocity" />
+        </joint>
+        
+    </ros2_control>
+
+</robot>

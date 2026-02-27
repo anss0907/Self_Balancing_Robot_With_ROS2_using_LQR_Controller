@@ -1,0 +1,203 @@
+================================================================================
+ GRACE Robot — ESP32 Firmware Parameters (Torque Control)
+================================================================================
+
+Updated: Firmware switched from speed-command to torque-command mode.
+Protocol:  ROS → ESP32:  "tL<val> tR<val>\n"     e.g. "tL120 tR-115\n"
+           ESP32 → ROS:  comma-separated sensor string (200 Hz)
+
+================================================================================
+ COMMAND PARAMETERS (ROS → ESP32 → Hoverboard STM32)
+================================================================================
+
+Parameter         Range          Units              Description
+----------        -----------    -----------------  ------------------------------------------
+targetTorqueL     [-1000,1000]   firmware units     Left wheel torque command (FOC q-axis
+                                 (dimensionless)    current reference). Positive = forward.
+targetTorqueR     [-1000,1000]   firmware units     Right wheel torque command. Positive = forward.
+                                 (dimensionless)
+
+  NOTE: Firmware units map to the hoverboard FOC current setpoint.
+        Physical torque:  τ [N·m] = Kt * firmware_cmd
+        Kt must be calibrated on your motor. See section at bottom.
+
+================================================================================
+ FEEDBACK PARAMETERS (Hoverboard STM32 → ESP32 → ROS)
+================================================================================
+
+--- Timing & Status ---
+
+Label   Field                 Width  Sign   Units         Description
+-----   --------------------  -----  ----   --------      ----------------------------------------
+T       esp32_dt_ms           4      none   ms            Time since last sensor string was sent
+D       driver_status         1      none   0/1           Hoverboard driver alive (1) or timed out (0)
+
+--- Battery & Temperature ---
+
+Label   Field                 Width  Sign   Units         Description
+-----   --------------------  -----  ----   --------      ----------------------------------------
+b       battery_mv            5      p/n    mV            Battery pack voltage (raw ×10 from ADC)
+                                                          Typical 33000–42000 mV (36V Li-Ion pack)
+t       temperature_deci_c    4      p/n    0.1 °C        Board temperature in deci-Celsius
+                                                          e.g. 0350 = 35.0 °C
+
+--- Torque Targets (echo of last command received by STM32) ---
+
+Label   Field                 Width  Sign   Units         Description
+-----   --------------------  -----  ----   --------      ----------------------------------------
+TL      target_torque_left    4      p/n    firmware      Echo of left torque command [-1000,1000]
+TR      target_torque_right   4      p/n    firmware      Echo of right torque command [-1000,1000]
+
+--- Motor Speed (measured by hall sensors / FOC estimator) ---
+
+Label   Field                 Width  Sign   Units         Description
+-----   --------------------  -----  ----   --------      ----------------------------------------
+Lm      speed_left_meas       4      p/n    RPM           Measured left wheel speed (electrical RPM)
+Rm      speed_right_meas      4      p/n    RPM           Measured right wheel speed (electrical RPM)
+
+--- DC Bus Current ---
+
+Label   Field                 Width  Sign   Units         Description
+-----   --------------------  -----  ----   --------      ----------------------------------------
+cL      curL_DC               5      p/n    mA            Left motor DC bus current
+cR      curR_DC               5      p/n    mA            Right motor DC bus current
+
+--- FOC Q-axis (Torque) Current ---
+
+Label   Field                 Width  Sign   Units         Description
+-----   --------------------  -----  ----   --------      ----------------------------------------
+qL      iq_left               5      p/n    mA            Left motor q-axis current (torque-producing)
+qR      iq_right              5      p/n    mA            Right motor q-axis current (torque-producing)
+
+  NOTE: Physical motor torque  τ_motor = Km × iq
+        Km (motor torque constant) must be determined from motor datasheet
+        or measured experimentally.
+
+--- FOC D-axis (Field) Current ---
+
+Label   Field                 Width  Sign   Units         Description
+-----   --------------------  -----  ----   --------      ----------------------------------------
+dL      id_left               5      p/n    mA            Left motor d-axis current (field-weakening)
+dR      id_right              5      p/n    mA            Right motor d-axis current (field-weakening)
+
+  NOTE: In ideal torque control, id ≈ 0. Non-zero id indicates
+        field-weakening or controller transients.
+
+--- Motor Electrical Angle ---
+
+Label   Field                 Width  Sign   Units         Description
+-----   --------------------  -----  ----   --------      ----------------------------------------
+aL      angle_left            5      p/n    deg (elect.)  Left motor electrical angle (0–360 × poles)
+aR      angle_right           5      p/n    deg (elect.)  Right motor electrical angle (0–360 × poles)
+
+  NOTE: To get mechanical angle: θ_mech = θ_elec / pole_pairs
+        Hoverboard motors typically have 15 pole pairs.
+
+--- IMU1 (MPU6050 @ I2C address 0x68) ---
+
+Label   Field                 Width  Sign   Units         Description
+-----   --------------------  -----  ----   --------      ----------------------------------------
+I1      imu1_status           1      none   0/1           IMU1 communication OK (1) or failed (0)
+ax1     accel_x_1             5      p/n    LSB           Raw X accelerometer (±2g: 16384 LSB/g)
+ay1     accel_y_1             5      p/n    LSB           Raw Y accelerometer
+az1     accel_z_1             5      p/n    LSB           Raw Z accelerometer
+gx1     gyro_x_1              5      p/n    LSB           Raw X gyroscope (±250°/s: 131 LSB/(°/s))
+gy1     gyro_y_1              5      p/n    LSB           Raw Y gyroscope
+gz1     gyro_z_1              5      p/n    LSB           Raw Z gyroscope
+
+  Conversion:
+    accel [m/s²]  = (raw / 16384.0) × 9.81
+    gyro  [rad/s] = (raw / 131.0)   × (π/180)
+
+--- IMU2 (MPU6050 @ I2C address 0x69) ---
+
+Label   Field                 Width  Sign   Units         Description
+-----   --------------------  -----  ----   --------      ----------------------------------------
+I2      imu2_status           1      none   0/1           IMU2 communication OK (1) or failed (0)
+ax2     accel_x_2             5      p/n    LSB           Raw X accelerometer
+ay2     accel_y_2             5      p/n    LSB           Raw Y accelerometer
+az2     accel_z_2             5      p/n    LSB           Raw Z accelerometer
+gx2     gyro_x_2              5      p/n    LSB           Raw X gyroscope
+gy2     gyro_y_2              5      p/n    LSB           Raw Y gyroscope
+gz2     gyro_z_2              5      p/n    LSB           Raw Z gyroscope
+
+================================================================================
+ FIRMWARE CONFIGURATION CONSTANTS
+================================================================================
+
+Constant                    Value       Units         Description
+---------                   -----       -----         ----------------------------------------
+TORQUE_MAX                  1000        firmware      Max torque command magnitude (clamped)
+HOVER_SEND_INTERVAL_MS      5           ms            Period of commands to STM32 (200 Hz)
+SENSOR_SEND_INTERVAL_MS     5           ms            Period of sensor string to ROS (200 Hz)
+DRIVER_TIMEOUT_MS           500         ms            Feedback timeout → driver_alive=false
+USB_BAUD                    115200      baud          USB serial baud rate to ROS PC
+HOVER_BAUD                  115200      baud          UART baud rate to hoverboard STM32
+HOVER_RX_PIN                16          GPIO          ESP32 UART2 RX → STM32 TX
+HOVER_TX_PIN                17          GPIO          ESP32 UART2 TX → STM32 RX
+I2C_SDA_PIN                 21          GPIO          I2C data (IMU bus)
+I2C_SCL_PIN                 22          GPIO          I2C clock (IMU bus)
+IMU1_ADDR                   0x68        I2C addr      MPU6050 #1 (AD0=LOW)
+IMU2_ADDR                   0x69        I2C addr      MPU6050 #2 (AD0=HIGH)
+START_FRAME                 0xABCD      hex           Binary protocol start frame marker
+
+================================================================================
+ EXAMPLE SENSOR STRING
+================================================================================
+
+,T0005,D1,b40500p,t0350p,TL0120p,Lm0050p,TR0115n,Rm0048n,cL01200p,cR01150p,qL00800p,qR00750p,dL00010p,dR00015p,aL18000p,aR09000p,I11,ax100500p,ay100100p,az116384p,gx100010p,gy100005p,gz100002p,I21,ax200480p,ay200090p,az216300p,gx200012p,gy200006p,gz200003p
+
+Fields:
+  T0005         → 5 ms since last send
+  D1            → driver alive
+  b40500p       → battery 40500 mV (40.5V)
+  t0350p        → temperature 350 deci-°C (35.0°C)
+  TL0120p       → target torque left = +120 firmware units
+  Lm0050p       → measured speed left = +50 RPM
+  TR0115n       → target torque right = -115 firmware units
+  Rm0048n       → measured speed right = -48 RPM
+  cL01200p      → DC current left = +1200 mA
+  cR01150p      → DC current right = +1150 mA
+  qL00800p      → iq (q-axis current) left = +800 mA
+  qR00750p      → iq (q-axis current) right = +750 mA
+  dL00010p      → id (d-axis current) left = +10 mA
+  dR00015p      → id (d-axis current) right = +15 mA
+  aL18000p      → electrical angle left = 18000 (180.00°)
+  aR09000p      → electrical angle right = 9000 (90.00°)
+  I11           → IMU1 OK
+  ax1...gz1     → IMU1 raw accel/gyro data
+  I21           → IMU2 OK
+  ax2...gz2     → IMU2 raw accel/gyro data
+
+================================================================================
+ CALIBRATING Kt (Firmware Units → Physical Torque)
+================================================================================
+
+The firmware torque command is a dimensionless value [-1000, 1000] that maps to
+the FOC q-axis current reference in the hoverboard STM32. To use the LQR
+controller (which works in N·m), you need the conversion factor:
+
+    τ_physical [N·m] = Kt × firmware_command
+
+Method 1 — From motor constants:
+    Kt = Km × (I_max / CMD_MAX)
+    where Km = motor torque constant [N·m/A]
+          I_max = max phase current at CMD_MAX=1000
+    Typical hoverboard motor: Km ≈ 0.1–0.3 N·m/A, I_max ≈ 10–20A
+    → Kt ≈ 0.001–0.006 N·m per firmware unit (per motor)
+
+Method 2 — Empirical (recommended):
+    1. Place robot on blocks (wheels free-spinning)
+    2. Send constant torque command u_fw (e.g., 200) to one wheel
+    3. Read steady-state iq from feedback (in mA)
+    4. Measure wheel angular acceleration α from speed feedback
+    5. τ = Jw_total × α  (Jw_total includes wheel + hub motor rotor)
+    6. Kt = τ / u_fw
+
+Method 3 — From iq feedback:
+    τ = Km × iq
+    Kt = Km × (iq / u_fw)    using measured iq for a given u_fw
+
+Default estimate (NEEDS CALIBRATION):
+    Kt ≈ 0.004 N·m per firmware unit per motor
+    For both motors: Kt_total = 2 × Kt ≈ 0.008 N·m per firmware unit

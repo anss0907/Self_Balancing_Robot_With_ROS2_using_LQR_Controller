@@ -1,0 +1,28 @@
+# Build output
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ROS2 generated
+colcon.meta
+COLCON_IGNORE
+
+# CSV logs (regenerated each run)
+LQR_Calculations/balancing_log.csv

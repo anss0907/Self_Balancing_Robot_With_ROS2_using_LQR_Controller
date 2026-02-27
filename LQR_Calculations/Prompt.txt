@@ -1,0 +1,39 @@
+ok the whole fodler was working to balance a robot in gazebo (the robot is without caster wheels and should be without caster wheels) now i have pasted a folder "src_of_a_working_proper_robot_with_casters_and_slam" basically it's the src folder of a working repo of actual "GRACE" robot which has caster wheels and have high level casters and is able to mvoe autonomously
+
+but the current goal is not autonmous navigation but balance without using casters
+and it's achieved in the simulation now it's time to impliment in hardware
+now what i want you to do for me
+the hardware related things ( all including mpu6050 motors motors things (we are not using LIDAR plate or LIDAR sensor in this new repo)) are corrected and tested avialable in the "src_of_a_working_proper_robot_with_casters_and_slam" files
+viewing that i want you to correct it in the grace (without casters one) which is outside the "src_of_a_working_proper_robot_with_casters_and_slam"
+i am using mpu6050_driver.py
+now it's not diirectly connected through wires but connected to esp32 and esp32 is sending motors velcoity data and and also 2 imus
+say imu1 will send data to /imu1/raw_data_out and then madgwick will ssend data to /imu/out topic second imu data topic will be /imu2/raw_data_out2 then madgwick will send data to /imu2/out topic
+it's written in esp23_interface package in launch files
+
+and grace_firmware should also be updated specially it's launch file hardware_interface.launch.py by modifiying grace_interace.cpp and maybe also the ros2 control urdf too or anyother fiel that you think should eb modified
+outside the folder of "src_of_a_working_proper_robot_with_casters_and_slam" based on it in "src_of_a_working_proper_robot_with_casters_and_slam"
+and also the delete mpu6050_driver.py serial serail transmitter and receiver.py files too
+
+can you um simply keep ros2_control don't by pass it and modify the code in real_robot.launch.py
+and bypass ros2_control in the newfile which will be created by you?
+
+okkkk so back to the plan thing we were doing
+after the plan got executed i would have 2 files
+real_robot.launch.py (modified) which give commands to ros2 control which would help him balance or soemthing like that
+adn a new balancing_real_robot.launch.py whcih would sends RPM commands directly to the grace_itnerface
+also the grace_interface is publishin positon + velcoity
+so the lqr_balancing py file should calculate positon on it's own just take it from the grace_interface or in teh simulation directly form the topic ( the gazebo publishes both position and velcoities i think so)
+is your complete plane ready share with me
+you SHOULD make a parameter in grace_interface so it knows from wher should it takes the comamnds
+
+
+use /dev/esp32 i have  use the udev rules to define /dev/esp32
+for the wheel names you can take them from the urdf by reading it  i don't remember right now
+3. currently don't bypass ros2control in in real_robot.launch.py but bypass it in the balancing balnacing_real_robot.launch.py 
+basically let me tell you what i want to do in the future
+in the fuutur i want to balance my orbot as well as to move it a little bit forward or backward still being stable but it's for future not now for now only for balancing i will focus on balancing_real_robot.launch.py so bypass it in that file you may want to declare some parameteres so that everyone knwos what i am trying to do here? either only balancing or balancing with movement
+
+the imu1 will publish at imu1/data and then madgwick will take data form that topic and publish at imu/out (remember not imu1/out because this particular topic is currently in use to balance i will use only 1 imu for now later on i will add another one) 
+for imu2 will publish at imu2/data and then  madgwich willt take data form taht topic and publish at imu2/out
+here are your answers
+
