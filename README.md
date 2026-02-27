@@ -145,7 +145,7 @@ sudo apt install libserial-dev
 # 1. Clone the repository
 mkdir -p ~/balancing_ws/src
 cd ~/balancing_ws/src
-git clone https://github.com/<YOUR_USERNAME>/grace-balancing.git .
+git clone https://github.com/anss0907/Self_Balancing_Robot_With_ROS2_using_LQR_Controller.git .
 
 # 2. Install dependencies
 cd ~/balancing_ws
